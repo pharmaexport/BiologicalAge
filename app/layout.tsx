@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { EvidenceNotes } from "./evidence-notes";
+import { SecondarySport } from "./secondary-sport";
 
 export const metadata: Metadata = {
   title: "Biological Age — Longevity Check",
@@ -12,6 +13,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="fr">
       <body>
         {children}
+        <SecondarySport />
         <EvidenceNotes />
       </body>
     </html>
