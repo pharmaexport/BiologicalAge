@@ -26,6 +26,32 @@ const STORAGE_KEY = "biological-age-assessment-v1";
 const LANGUAGE_KEY = "biological-age-language-v1";
 
 type Option = { value: string; key: string };
+type NumericField =
+  | "age"
+  | "heightCm"
+  | "weightKg"
+  | "waistCm"
+  | "moderateMinutes"
+  | "vigorousMinutes"
+  | "strengthSessions"
+  | "mobilitySessions"
+  | "sittingHours"
+  | "sportYears"
+  | "sleepHours"
+  | "stressLevel"
+  | "fatigueLevel"
+  | "fruitVegServingsPerDay"
+  | "legumesPerWeek"
+  | "sugaryDrinksPerWeek"
+  | "nutsSeedsPerWeek"
+  | "fattyFishPerWeek"
+  | "processedMeatPerWeek"
+  | "alcoholDrinksPerWeek"
+  | "systolic"
+  | "diastolic"
+  | "restingHeartRate";
+
+type NumericDrafts = Record<NumericField, string>;
 
 const sportOptions: Option[] = [
   { value: "none", key: "sportNone" },
@@ -121,6 +147,73 @@ function parseNumber(value: string) {
   return Number.isFinite(number) ? number : null;
 }
 
+function draftValue(value: number | null) {
+  return value === null ? "" : String(value);
+}
+
+function draftsFromAssessment(profile: Profile, questionnaire: Questionnaire): NumericDrafts {
+  return {
+    age: draftValue(profile.age),
+    heightCm: draftValue(profile.heightCm),
+    weightKg: draftValue(profile.weightKg),
+    waistCm: draftValue(profile.waistCm),
+    moderateMinutes: draftValue(questionnaire.moderateMinutes),
+    vigorousMinutes: draftValue(questionnaire.vigorousMinutes),
+    strengthSessions: draftValue(questionnaire.strengthSessions),
+    mobilitySessions: draftValue(questionnaire.mobilitySessions),
+    sittingHours: draftValue(questionnaire.sittingHours),
+    sportYears: draftValue(questionnaire.sportYears),
+    sleepHours: draftValue(questionnaire.sleepHours),
+    stressLevel: draftValue(questionnaire.stressLevel),
+    fatigueLevel: draftValue(questionnaire.fatigueLevel),
+    fruitVegServingsPerDay: draftValue(questionnaire.fruitVegServingsPerDay),
+    legumesPerWeek: draftValue(questionnaire.legumesPerWeek),
+    sugaryDrinksPerWeek: draftValue(questionnaire.sugaryDrinksPerWeek),
+    nutsSeedsPerWeek: draftValue(questionnaire.nutsSeedsPerWeek),
+    fattyFishPerWeek: draftValue(questionnaire.fattyFishPerWeek),
+    processedMeatPerWeek: draftValue(questionnaire.processedMeatPerWeek),
+    alcoholDrinksPerWeek: draftValue(questionnaire.alcoholDrinksPerWeek),
+    systolic: draftValue(questionnaire.systolic),
+    diastolic: draftValue(questionnaire.diastolic),
+    restingHeartRate: draftValue(questionnaire.restingHeartRate)
+  };
+}
+
+function profileFromDrafts(profile: Profile, drafts: NumericDrafts) {
+  return normalizeProfile({
+    ...profile,
+    age: parseNumber(drafts.age) ?? profile.age,
+    heightCm: parseNumber(drafts.heightCm) ?? profile.heightCm,
+    weightKg: parseNumber(drafts.weightKg) ?? profile.weightKg,
+    waistCm: parseNumber(drafts.waistCm)
+  });
+}
+
+function questionnaireFromDrafts(questionnaire: Questionnaire, drafts: NumericDrafts) {
+  return normalizeQuestionnaire({
+    ...questionnaire,
+    moderateMinutes: parseNumber(drafts.moderateMinutes),
+    vigorousMinutes: parseNumber(drafts.vigorousMinutes),
+    strengthSessions: parseNumber(drafts.strengthSessions),
+    mobilitySessions: parseNumber(drafts.mobilitySessions),
+    sittingHours: parseNumber(drafts.sittingHours),
+    sportYears: parseNumber(drafts.sportYears),
+    sleepHours: parseNumber(drafts.sleepHours),
+    stressLevel: parseNumber(drafts.stressLevel),
+    fatigueLevel: parseNumber(drafts.fatigueLevel),
+    fruitVegServingsPerDay: parseNumber(drafts.fruitVegServingsPerDay),
+    legumesPerWeek: parseNumber(drafts.legumesPerWeek),
+    sugaryDrinksPerWeek: parseNumber(drafts.sugaryDrinksPerWeek),
+    nutsSeedsPerWeek: parseNumber(drafts.nutsSeedsPerWeek),
+    fattyFishPerWeek: parseNumber(drafts.fattyFishPerWeek),
+    processedMeatPerWeek: parseNumber(drafts.processedMeatPerWeek),
+    alcoholDrinksPerWeek: parseNumber(drafts.alcoholDrinksPerWeek),
+    systolic: parseNumber(drafts.systolic),
+    diastolic: parseNumber(drafts.diastolic),
+    restingHeartRate: parseNumber(drafts.restingHeartRate)
+  });
+}
+
 function NumberField({
   label,
   value,
@@ -129,8 +222,8 @@ function NumberField({
   decimal = false
 }: {
   label: string;
-  value: number | null;
-  onChange: (value: number | null) => void;
+  value: string;
+  onChange: (value: string) => void;
   suffix?: string;
   decimal?: boolean;
 }) {
@@ -141,8 +234,10 @@ function NumberField({
         <input
           inputMode={decimal ? "decimal" : "numeric"}
           type="text"
-          value={value ?? ""}
-          onChange={(event) => onChange(parseNumber(event.currentTarget.value))}
+          value={value}
+          autoComplete="off"
+          onFocus={(event) => event.currentTarget.select()}
+          onChange={(event) => onChange(event.currentTarget.value)}
         />
         {suffix ? <small>{suffix}</small> : null}
       </div>
@@ -181,6 +276,7 @@ export default function HomePage() {
   const [language, setLanguage] = useState<Language>("fr");
   const [profile, setProfile] = useState<Profile>(defaultProfile);
   const [questionnaire, setQuestionnaire] = useState<Questionnaire>(defaultQuestionnaire);
+  const [drafts, setDrafts] = useState<NumericDrafts>(() => draftsFromAssessment(defaultProfile, defaultQuestionnaire));
   const [saved, setSaved] = useState(false);
 
   const t = (key: string) => translate(language, key);
@@ -192,12 +288,16 @@ export default function HomePage() {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as { profile?: Partial<Profile>; questionnaire?: Partial<Questionnaire> };
-        setProfile(normalizeProfile(parsed.profile));
-        setQuestionnaire(normalizeQuestionnaire(parsed.questionnaire));
+        const storedProfile = normalizeProfile(parsed.profile);
+        const storedQuestionnaire = normalizeQuestionnaire(parsed.questionnaire);
+        setProfile(storedProfile);
+        setQuestionnaire(storedQuestionnaire);
+        setDrafts(draftsFromAssessment(storedProfile, storedQuestionnaire));
       }
     } catch {
       setProfile(defaultProfile);
       setQuestionnaire(defaultQuestionnaire);
+      setDrafts(draftsFromAssessment(defaultProfile, defaultQuestionnaire));
     }
   }, []);
 
@@ -206,24 +306,31 @@ export default function HomePage() {
     window.localStorage.setItem(LANGUAGE_KEY, language);
   }, [language]);
 
-  const result = useMemo(() => calculateBiologicalAge(profile, questionnaire), [profile, questionnaire]);
+  const effectiveProfile = useMemo(() => profileFromDrafts(profile, drafts), [profile, drafts]);
+  const effectiveQuestionnaire = useMemo(() => questionnaireFromDrafts(questionnaire, drafts), [questionnaire, drafts]);
+  const result = useMemo(
+    () => calculateBiologicalAge(effectiveProfile, effectiveQuestionnaire),
+    [effectiveProfile, effectiveQuestionnaire]
+  );
 
-  function updateProfile<K extends keyof Profile>(field: K, value: Profile[K]) {
+  function updateDraft(field: NumericField, value: string) {
     setSaved(false);
-    setProfile((current) => normalizeProfile({ ...current, [field]: value }));
+    setDrafts((current) => ({ ...current, [field]: value }));
   }
 
   function updateQuestionnaire<K extends keyof Questionnaire>(field: K, value: Questionnaire[K]) {
     setSaved(false);
-    setQuestionnaire((current) => normalizeQuestionnaire({ ...current, [field]: value }));
+    setQuestionnaire((current) => ({ ...current, [field]: value }));
   }
 
   function saveAssessment() {
-    const normalizedProfile = normalizeProfile(profile);
-    const normalizedQuestionnaire = normalizeQuestionnaire(questionnaire);
-    setProfile(normalizedProfile);
-    setQuestionnaire(normalizedQuestionnaire);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ profile: normalizedProfile, questionnaire: normalizedQuestionnaire }));
+    setProfile(effectiveProfile);
+    setQuestionnaire(effectiveQuestionnaire);
+    setDrafts(draftsFromAssessment(effectiveProfile, effectiveQuestionnaire));
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ profile: effectiveProfile, questionnaire: effectiveQuestionnaire })
+    );
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2200);
   }
@@ -231,6 +338,7 @@ export default function HomePage() {
   function resetAssessment() {
     setProfile(defaultProfile);
     setQuestionnaire(defaultQuestionnaire);
+    setDrafts(draftsFromAssessment(defaultProfile, defaultQuestionnaire));
     setSaved(false);
     window.localStorage.removeItem(STORAGE_KEY);
   }
@@ -294,10 +402,10 @@ export default function HomePage() {
             <legend>{t("profileTitle")}</legend>
             <p>{t("profileText")}</p>
             <div className="formGrid">
-              <NumberField label={t("age")} value={profile.age} onChange={(value) => updateProfile("age", value ?? profile.age)} suffix={t("years")} />
-              <NumberField label={t("height")} value={profile.heightCm} onChange={(value) => updateProfile("heightCm", value ?? profile.heightCm)} suffix="cm" />
-              <NumberField label={t("weight")} value={profile.weightKg} onChange={(value) => updateProfile("weightKg", value ?? profile.weightKg)} suffix="kg" decimal />
-              <NumberField label={t("waist")} value={profile.waistCm} onChange={(value) => updateProfile("waistCm", value)} suffix={`cm · ${t("optional")}`} decimal />
+              <NumberField label={t("age")} value={drafts.age} onChange={(value) => updateDraft("age", value)} suffix={t("years")} />
+              <NumberField label={t("height")} value={drafts.heightCm} onChange={(value) => updateDraft("heightCm", value)} suffix="cm" />
+              <NumberField label={t("weight")} value={drafts.weightKg} onChange={(value) => updateDraft("weightKg", value)} suffix="kg" decimal />
+              <NumberField label={t("waist")} value={drafts.waistCm} onChange={(value) => updateDraft("waistCm", value)} suffix={`cm · ${t("optional")}`} decimal />
             </div>
           </fieldset>
 
@@ -305,12 +413,12 @@ export default function HomePage() {
             <legend>{t("movementTitle")}</legend>
             <div className="formGrid">
               <SelectField label={t("sportType")} value={questionnaire.sportType} options={sportOptions} language={language} onChange={(value) => updateQuestionnaire("sportType", value as SportType)} />
-              <NumberField label={t("moderateMinutes")} value={questionnaire.moderateMinutes} onChange={(value) => updateQuestionnaire("moderateMinutes", value)} />
-              <NumberField label={t("vigorousMinutes")} value={questionnaire.vigorousMinutes} onChange={(value) => updateQuestionnaire("vigorousMinutes", value)} />
-              <NumberField label={t("strengthSessions")} value={questionnaire.strengthSessions} onChange={(value) => updateQuestionnaire("strengthSessions", value)} />
-              <NumberField label={t("mobilitySessions")} value={questionnaire.mobilitySessions} onChange={(value) => updateQuestionnaire("mobilitySessions", value)} />
-              <NumberField label={t("sittingHours")} value={questionnaire.sittingHours} onChange={(value) => updateQuestionnaire("sittingHours", value)} decimal />
-              <NumberField label={t("sportYears")} value={questionnaire.sportYears} onChange={(value) => updateQuestionnaire("sportYears", value)} />
+              <NumberField label={t("moderateMinutes")} value={drafts.moderateMinutes} onChange={(value) => updateDraft("moderateMinutes", value)} />
+              <NumberField label={t("vigorousMinutes")} value={drafts.vigorousMinutes} onChange={(value) => updateDraft("vigorousMinutes", value)} />
+              <NumberField label={t("strengthSessions")} value={drafts.strengthSessions} onChange={(value) => updateDraft("strengthSessions", value)} />
+              <NumberField label={t("mobilitySessions")} value={drafts.mobilitySessions} onChange={(value) => updateDraft("mobilitySessions", value)} />
+              <NumberField label={t("sittingHours")} value={drafts.sittingHours} onChange={(value) => updateDraft("sittingHours", value)} decimal />
+              <NumberField label={t("sportYears")} value={drafts.sportYears} onChange={(value) => updateDraft("sportYears", value)} />
               <SelectField label={t("socialPractice")} value={questionnaire.socialPractice} options={socialOptions} language={language} onChange={(value) => updateQuestionnaire("socialPractice", value as SocialPractice)} />
               <SelectField label={t("injuries")} value={questionnaire.injuries} options={injuryOptions} language={language} onChange={(value) => updateQuestionnaire("injuries", value as InjuryStatus)} />
             </div>
@@ -319,10 +427,10 @@ export default function HomePage() {
           <fieldset>
             <legend>{t("recoveryTitle")}</legend>
             <div className="formGrid">
-              <NumberField label={t("sleepHours")} value={questionnaire.sleepHours} onChange={(value) => updateQuestionnaire("sleepHours", value)} decimal />
+              <NumberField label={t("sleepHours")} value={drafts.sleepHours} onChange={(value) => updateDraft("sleepHours", value)} decimal />
               <SelectField label={t("sleepQuality")} value={questionnaire.sleepQuality} options={sleepOptions} language={language} onChange={(value) => updateQuestionnaire("sleepQuality", value as SleepQuality)} />
-              <NumberField label={t("stressLevel")} value={questionnaire.stressLevel} onChange={(value) => updateQuestionnaire("stressLevel", value)} />
-              <NumberField label={t("fatigueLevel")} value={questionnaire.fatigueLevel} onChange={(value) => updateQuestionnaire("fatigueLevel", value)} />
+              <NumberField label={t("stressLevel")} value={drafts.stressLevel} onChange={(value) => updateDraft("stressLevel", value)} />
+              <NumberField label={t("fatigueLevel")} value={drafts.fatigueLevel} onChange={(value) => updateDraft("fatigueLevel", value)} />
               <SelectField label={t("energyStability")} value={questionnaire.energyStability} options={energyOptions} language={language} onChange={(value) => updateQuestionnaire("energyStability", value as EnergyStability)} />
               <SelectField label={t("emotionalEating")} value={questionnaire.emotionalEating} options={frequencyOptions} language={language} onChange={(value) => updateQuestionnaire("emotionalEating", value as Frequency)} />
             </div>
@@ -331,15 +439,15 @@ export default function HomePage() {
           <fieldset>
             <legend>{t("nutritionTitle")}</legend>
             <div className="formGrid">
-              <NumberField label={t("fruitVegServingsPerDay")} value={questionnaire.fruitVegServingsPerDay} onChange={(value) => updateQuestionnaire("fruitVegServingsPerDay", value)} decimal />
-              <NumberField label={t("legumesPerWeek")} value={questionnaire.legumesPerWeek} onChange={(value) => updateQuestionnaire("legumesPerWeek", value)} />
+              <NumberField label={t("fruitVegServingsPerDay")} value={drafts.fruitVegServingsPerDay} onChange={(value) => updateDraft("fruitVegServingsPerDay", value)} decimal />
+              <NumberField label={t("legumesPerWeek")} value={drafts.legumesPerWeek} onChange={(value) => updateDraft("legumesPerWeek", value)} />
               <SelectField label={t("wholeGrains")} value={questionnaire.wholeGrains} options={frequencyOptions} language={language} onChange={(value) => updateQuestionnaire("wholeGrains", value as Frequency)} />
               <SelectField label={t("ultraProcessed")} value={questionnaire.ultraProcessed} options={frequencyOptions} language={language} onChange={(value) => updateQuestionnaire("ultraProcessed", value as Frequency)} />
-              <NumberField label={t("sugaryDrinksPerWeek")} value={questionnaire.sugaryDrinksPerWeek} onChange={(value) => updateQuestionnaire("sugaryDrinksPerWeek", value)} />
+              <NumberField label={t("sugaryDrinksPerWeek")} value={drafts.sugaryDrinksPerWeek} onChange={(value) => updateDraft("sugaryDrinksPerWeek", value)} />
               <SelectField label={t("proteinAtMeals")} value={questionnaire.proteinAtMeals} options={frequencyOptions} language={language} onChange={(value) => updateQuestionnaire("proteinAtMeals", value as Frequency)} />
-              <NumberField label={t("nutsSeedsPerWeek")} value={questionnaire.nutsSeedsPerWeek} onChange={(value) => updateQuestionnaire("nutsSeedsPerWeek", value)} />
-              <NumberField label={t("fattyFishPerWeek")} value={questionnaire.fattyFishPerWeek} onChange={(value) => updateQuestionnaire("fattyFishPerWeek", value)} />
-              <NumberField label={t("processedMeatPerWeek")} value={questionnaire.processedMeatPerWeek} onChange={(value) => updateQuestionnaire("processedMeatPerWeek", value)} />
+              <NumberField label={t("nutsSeedsPerWeek")} value={drafts.nutsSeedsPerWeek} onChange={(value) => updateDraft("nutsSeedsPerWeek", value)} />
+              <NumberField label={t("fattyFishPerWeek")} value={drafts.fattyFishPerWeek} onChange={(value) => updateDraft("fattyFishPerWeek", value)} />
+              <NumberField label={t("processedMeatPerWeek")} value={drafts.processedMeatPerWeek} onChange={(value) => updateDraft("processedMeatPerWeek", value)} />
               <SelectField label={t("appetiteChange")} value={questionnaire.appetiteChange} options={changeOptions} language={language} onChange={(value) => updateQuestionnaire("appetiteChange", value as ChangeStatus)} />
               <SelectField label={t("unintentionalWeightLoss")} value={questionnaire.unintentionalWeightLoss} options={changeOptions} language={language} onChange={(value) => updateQuestionnaire("unintentionalWeightLoss", value as ChangeStatus)} />
             </div>
@@ -349,16 +457,16 @@ export default function HomePage() {
             <legend>{t("habitsTitle")}</legend>
             <div className="formGrid">
               <SelectField label={t("tobacco")} value={questionnaire.tobacco} options={tobaccoOptions} language={language} onChange={(value) => updateQuestionnaire("tobacco", value as TobaccoStatus)} />
-              <NumberField label={t("alcoholDrinksPerWeek")} value={questionnaire.alcoholDrinksPerWeek} onChange={(value) => updateQuestionnaire("alcoholDrinksPerWeek", value)} />
+              <NumberField label={t("alcoholDrinksPerWeek")} value={drafts.alcoholDrinksPerWeek} onChange={(value) => updateDraft("alcoholDrinksPerWeek", value)} />
             </div>
           </fieldset>
 
           <fieldset>
             <legend>{t("vitalsTitle")}</legend>
             <div className="formGrid">
-              <NumberField label={t("systolic")} value={questionnaire.systolic} onChange={(value) => updateQuestionnaire("systolic", value)} suffix="mmHg" />
-              <NumberField label={t("diastolic")} value={questionnaire.diastolic} onChange={(value) => updateQuestionnaire("diastolic", value)} suffix="mmHg" />
-              <NumberField label={t("restingHeartRate")} value={questionnaire.restingHeartRate} onChange={(value) => updateQuestionnaire("restingHeartRate", value)} suffix="bpm" />
+              <NumberField label={t("systolic")} value={drafts.systolic} onChange={(value) => updateDraft("systolic", value)} suffix="mmHg" />
+              <NumberField label={t("diastolic")} value={drafts.diastolic} onChange={(value) => updateDraft("diastolic", value)} suffix="mmHg" />
+              <NumberField label={t("restingHeartRate")} value={drafts.restingHeartRate} onChange={(value) => updateDraft("restingHeartRate", value)} suffix="bpm" />
             </div>
           </fieldset>
 
