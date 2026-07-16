@@ -1,0 +1,40 @@
+.note {
+  margin: 8px 0 22px;
+  padding: 14px 16px;
+  border-left: 4px solid var(--green);
+  border-radius: 0 15px 15px 0;
+  background: rgba(220, 235, 220, 0.48);
+}
+
+.note p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.note .sources {
+  margin-top: 8px;
+  font-size: 0.79rem;
+}
+
+.note strong {
+  color: var(--green-dark);
+}
+
+.note a {
+  color: var(--green);
+  font-weight: 850;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.note a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.methodNote {
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.42);
+}
