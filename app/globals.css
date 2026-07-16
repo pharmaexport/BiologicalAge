@@ -151,6 +151,7 @@ progress::-moz-progress-bar { background: var(--green); border-radius: 999px; }
   .metricGrid, .formGrid, .detailsColumn { grid-template-columns: 1fr; }
   .detailsColumn .stickyCard, .detailsColumn .methodCard { grid-column: auto; }
   fieldset { padding: 24px 18px; border-radius: 24px; }
+  legend { margin-left: -18px; }
   .field > span { min-height: 0; }
   .submitButton { width: 100%; }
 }
