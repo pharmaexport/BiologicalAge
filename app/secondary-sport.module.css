@@ -1,0 +1,18 @@
+.field {
+  align-content: start;
+}
+
+.hint {
+  display: block;
+  min-height: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.hint a {
+  color: var(--green-dark);
+  font-weight: 850;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
