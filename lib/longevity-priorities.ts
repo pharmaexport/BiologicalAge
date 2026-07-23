@@ -16,17 +16,22 @@ export type LongevityPriority = {
   titleKey: string;
   actionKey: string;
   rationaleKey: string;
+  targetKey: string;
+  evidenceKey: string;
+  estimateMinMonths: number;
+  estimateMaxMonths: number;
+  confidence: "high" | "medium" | "low";
 };
 
-const metadata: Record<PriorityKey, Omit<LongevityPriority, "key" | "severity">> = {
-  tobacco: { titleKey: "priorityTobaccoTitle", actionKey: "priorityTobaccoAction", rationaleKey: "priorityTobaccoRationale" },
-  activity: { titleKey: "priorityActivityTitle", actionKey: "priorityActivityAction", rationaleKey: "priorityActivityRationale" },
-  sedentary: { titleKey: "prioritySedentaryTitle", actionKey: "prioritySedentaryAction", rationaleKey: "prioritySedentaryRationale" },
-  sleep: { titleKey: "prioritySleepTitle", actionKey: "prioritySleepAction", rationaleKey: "prioritySleepRationale" },
-  nutrition: { titleKey: "priorityNutritionTitle", actionKey: "priorityNutritionAction", rationaleKey: "priorityNutritionRationale" },
-  alcohol: { titleKey: "priorityAlcoholTitle", actionKey: "priorityAlcoholAction", rationaleKey: "priorityAlcoholRationale" },
-  stressRecovery: { titleKey: "priorityStressTitle", actionKey: "priorityStressAction", rationaleKey: "priorityStressRationale" },
-  morphology: { titleKey: "priorityMorphologyTitle", actionKey: "priorityMorphologyAction", rationaleKey: "priorityMorphologyRationale" }
+const metadata: Record<PriorityKey, Omit<LongevityPriority, "key" | "severity" | "estimateMinMonths" | "estimateMaxMonths">> = {
+  tobacco: { titleKey: "priorityTobaccoTitle", actionKey: "priorityTobaccoAction", rationaleKey: "priorityTobaccoRationale", targetKey: "targetTobacco", evidenceKey: "evidenceTobacco", confidence: "high" },
+  activity: { titleKey: "priorityActivityTitle", actionKey: "priorityActivityAction", rationaleKey: "priorityActivityRationale", targetKey: "targetActivity", evidenceKey: "evidenceActivity", confidence: "high" },
+  sedentary: { titleKey: "prioritySedentaryTitle", actionKey: "prioritySedentaryAction", rationaleKey: "prioritySedentaryRationale", targetKey: "targetSedentary", evidenceKey: "evidenceSedentary", confidence: "low" },
+  sleep: { titleKey: "prioritySleepTitle", actionKey: "prioritySleepAction", rationaleKey: "prioritySleepRationale", targetKey: "targetSleep", evidenceKey: "evidenceSleep", confidence: "low" },
+  nutrition: { titleKey: "priorityNutritionTitle", actionKey: "priorityNutritionAction", rationaleKey: "priorityNutritionRationale", targetKey: "targetNutrition", evidenceKey: "evidenceNutrition", confidence: "medium" },
+  alcohol: { titleKey: "priorityAlcoholTitle", actionKey: "priorityAlcoholAction", rationaleKey: "priorityAlcoholRationale", targetKey: "targetAlcohol", evidenceKey: "evidenceAlcohol", confidence: "low" },
+  stressRecovery: { titleKey: "priorityStressTitle", actionKey: "priorityStressAction", rationaleKey: "priorityStressRationale", targetKey: "targetStress", evidenceKey: "evidenceStress", confidence: "low" },
+  morphology: { titleKey: "priorityMorphologyTitle", actionKey: "priorityMorphologyAction", rationaleKey: "priorityMorphologyRationale", targetKey: "targetMorphology", evidenceKey: "evidenceMorphology", confidence: "low" }
 };
 
 const weights: Record<PriorityKey, number> = {
@@ -43,6 +48,26 @@ const weights: Record<PriorityKey, number> = {
 function componentDeficit(result: AssessmentResult, key: ComponentKey) {
   const component = result.components.find((item) => item.key === key);
   return component ? 1 - component.score / component.max : 0;
+}
+
+function estimateRange(key: PriorityKey, severity: number, age: number, questionnaire: Questionnaire): [number, number] {
+  const factor = Math.max(0.25, severity / 100);
+  if (key === "tobacco") {
+    if (questionnaire.tobacco !== "current") return [0, Math.round(12 * factor)];
+    const ageAdjustedYears = age <= 35 ? [6.1, 8.5] : age >= 65 ? [1.4, 3.7] : [6.1 - ((age - 35) / 30) * 4.7, 8.5 - ((age - 35) / 30) * 4.8];
+    return [Math.round(ageAdjustedYears[0] * 12), Math.round(ageAdjustedYears[1] * 12)];
+  }
+  const ranges: Record<Exclude<PriorityKey, "tobacco">, [number, number]> = {
+    activity: [12, 36],
+    sedentary: [3, 15],
+    sleep: [3, 18],
+    nutrition: [12, 39],
+    alcohol: [2, 18],
+    stressRecovery: [2, 12],
+    morphology: [6, 30]
+  };
+  const [min, max] = ranges[key];
+  return [Math.max(1, Math.round(min * factor)), Math.max(2, Math.round(max * factor))];
 }
 
 export function calculateLongevityPriorities(
@@ -62,11 +87,11 @@ export function calculateLongevityPriorities(
   ];
 
   return candidates
-    .map(({ key, deficit, urgency = 0 }) => ({
-      key,
-      severity: Math.round(Math.min(1, deficit * weights[key] + urgency) * 100),
-      ...metadata[key]
-    }))
+    .map(({ key, deficit, urgency = 0 }) => {
+      const severity = Math.round(Math.min(1, deficit * weights[key] + urgency) * 100);
+      const [estimateMinMonths, estimateMaxMonths] = estimateRange(key, severity, profile.age, questionnaire);
+      return { key, severity, estimateMinMonths, estimateMaxMonths, ...metadata[key] };
+    })
     .filter((item) => item.severity >= 12)
     .sort((a, b) => b.severity - a.severity)
     .slice(0, 3);
