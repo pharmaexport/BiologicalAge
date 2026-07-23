@@ -21,124 +21,58 @@ import {
   type TobaccoStatus
 } from "@/lib/biological-age";
 import { languageOptions, translate, type Language } from "@/lib/i18n";
+import { calculateLongevityPriorities } from "@/lib/longevity-priorities";
 
 const STORAGE_KEY = "biological-age-assessment-v1";
 const LANGUAGE_KEY = "biological-age-language-v1";
 
 type Option = { value: string; key: string };
 type NumericField =
-  | "age"
-  | "heightCm"
-  | "weightKg"
-  | "waistCm"
-  | "moderateMinutes"
-  | "vigorousMinutes"
-  | "strengthSessions"
-  | "mobilitySessions"
-  | "sittingHours"
-  | "sportYears"
-  | "sleepHours"
-  | "stressLevel"
-  | "fatigueLevel"
-  | "fruitVegServingsPerDay"
-  | "legumesPerWeek"
-  | "sugaryDrinksPerWeek"
-  | "nutsSeedsPerWeek"
-  | "fattyFishPerWeek"
-  | "processedMeatPerWeek"
-  | "alcoholDrinksPerWeek"
-  | "systolic"
-  | "diastolic"
-  | "restingHeartRate";
+  | "age" | "heightCm" | "weightKg" | "waistCm" | "moderateMinutes" | "vigorousMinutes"
+  | "strengthSessions" | "mobilitySessions" | "sittingHours" | "sportYears" | "sleepHours"
+  | "stressLevel" | "fatigueLevel" | "fruitVegServingsPerDay" | "legumesPerWeek"
+  | "sugaryDrinksPerWeek" | "nutsSeedsPerWeek" | "fattyFishPerWeek" | "processedMeatPerWeek"
+  | "alcoholDrinksPerWeek" | "systolic" | "diastolic" | "restingHeartRate";
 
 type NumericDrafts = Record<NumericField, string>;
 
 const sportOptions: Option[] = [
-  { value: "none", key: "sportNone" },
-  { value: "walking", key: "sportWalking" },
-  { value: "running", key: "sportRunning" },
-  { value: "cycling", key: "sportCycling" },
-  { value: "swimming", key: "sportSwimming" },
-  { value: "racket", key: "sportRacket" },
-  { value: "team", key: "sportTeam" },
-  { value: "strength", key: "sportStrength" },
-  { value: "fitness", key: "sportFitness" },
-  { value: "yoga", key: "sportYoga" },
-  { value: "other", key: "sportOther" }
+  { value: "none", key: "sportNone" }, { value: "walking", key: "sportWalking" }, { value: "running", key: "sportRunning" },
+  { value: "cycling", key: "sportCycling" }, { value: "swimming", key: "sportSwimming" }, { value: "racket", key: "sportRacket" },
+  { value: "team", key: "sportTeam" }, { value: "strength", key: "sportStrength" }, { value: "fitness", key: "sportFitness" },
+  { value: "yoga", key: "sportYoga" }, { value: "other", key: "sportOther" }
 ];
-
 const socialOptions: Option[] = [
-  { value: "solo", key: "socialSolo" },
-  { value: "pair", key: "socialPair" },
-  { value: "group", key: "socialGroup" },
-  { value: "club", key: "socialClub" }
+  { value: "solo", key: "socialSolo" }, { value: "pair", key: "socialPair" }, { value: "group", key: "socialGroup" }, { value: "club", key: "socialClub" }
 ];
-
 const injuryOptions: Option[] = [
-  { value: "none", key: "injuryNone" },
-  { value: "light", key: "injuryLight" },
-  { value: "frequent", key: "injuryFrequent" },
-  { value: "limited", key: "injuryLimited" }
+  { value: "none", key: "injuryNone" }, { value: "light", key: "injuryLight" }, { value: "frequent", key: "injuryFrequent" }, { value: "limited", key: "injuryLimited" }
 ];
-
 const sleepOptions: Option[] = [
-  { value: "good", key: "sleepGood" },
-  { value: "average", key: "sleepAverage" },
-  { value: "poor", key: "sleepPoor" }
+  { value: "good", key: "sleepGood" }, { value: "average", key: "sleepAverage" }, { value: "poor", key: "sleepPoor" }
 ];
-
 const tobaccoOptions: Option[] = [
-  { value: "never", key: "tobaccoNever" },
-  { value: "former", key: "tobaccoFormer" },
-  { value: "nicotine", key: "tobaccoNicotine" },
-  { value: "current", key: "tobaccoCurrent" }
+  { value: "never", key: "tobaccoNever" }, { value: "former", key: "tobaccoFormer" }, { value: "nicotine", key: "tobaccoNicotine" }, { value: "current", key: "tobaccoCurrent" }
 ];
-
 const frequencyOptions: Option[] = [
-  { value: "rare", key: "frequencyRare" },
-  { value: "some", key: "frequencySome" },
-  { value: "frequent", key: "frequencyFrequent" },
-  { value: "daily", key: "frequencyDaily" }
+  { value: "rare", key: "frequencyRare" }, { value: "some", key: "frequencySome" }, { value: "frequent", key: "frequencyFrequent" }, { value: "daily", key: "frequencyDaily" }
 ];
-
 const energyOptions: Option[] = [
-  { value: "stable", key: "energyStable" },
-  { value: "variable", key: "energyVariable" },
-  { value: "crash", key: "energyCrash" },
-  { value: "unknown", key: "energyUnknown" }
+  { value: "stable", key: "energyStable" }, { value: "variable", key: "energyVariable" }, { value: "crash", key: "energyCrash" }, { value: "unknown", key: "energyUnknown" }
 ];
-
 const changeOptions: Option[] = [
-  { value: "none", key: "changeNone" },
-  { value: "slight", key: "changeSlight" },
-  { value: "clear", key: "changeClear" },
-  { value: "unknown", key: "changeUnknown" }
+  { value: "none", key: "changeNone" }, { value: "slight", key: "changeSlight" }, { value: "clear", key: "changeClear" }, { value: "unknown", key: "changeUnknown" }
 ];
 
 const componentTranslation: Record<ComponentKey, string> = {
-  nutrition: "componentNutrition",
-  activity: "componentActivity",
-  sedentary: "componentSedentary",
-  sleep: "componentSleep",
-  stressRecovery: "componentStressRecovery",
-  tobacco: "componentTobacco",
-  alcohol: "componentAlcohol",
-  morphology: "componentMorphology",
-  vitals: "componentVitals"
+  nutrition: "componentNutrition", activity: "componentActivity", sedentary: "componentSedentary", sleep: "componentSleep",
+  stressRecovery: "componentStressRecovery", tobacco: "componentTobacco", alcohol: "componentAlcohol", morphology: "componentMorphology", vitals: "componentVitals"
 };
-
 const factorTranslation: Record<FactorKey, string> = {
-  regularActivity: "factorRegularActivity",
-  protectiveNutrition: "factorProtectiveNutrition",
-  lowTobaccoExposure: "factorLowTobaccoExposure",
-  highSedentaryTime: "factorHighSedentaryTime",
-  tobaccoOrNicotine: "factorTobaccoOrNicotine",
-  poorSleep: "factorPoorSleep",
-  frequentUltraProcessed: "factorFrequentUltraProcessed",
-  highAlcohol: "factorHighAlcohol",
-  highFatigue: "factorHighFatigue",
-  intenseStress: "factorIntenseStress",
-  appetiteOrWeightChange: "factorAppetiteOrWeightChange"
+  regularActivity: "factorRegularActivity", protectiveNutrition: "factorProtectiveNutrition", lowTobaccoExposure: "factorLowTobaccoExposure",
+  highSedentaryTime: "factorHighSedentaryTime", tobaccoOrNicotine: "factorTobaccoOrNicotine", poorSleep: "factorPoorSleep",
+  frequentUltraProcessed: "factorFrequentUltraProcessed", highAlcohol: "factorHighAlcohol", highFatigue: "factorHighFatigue",
+  intenseStress: "factorIntenseStress", appetiteOrWeightChange: "factorAppetiteOrWeightChange"
 };
 
 function parseNumber(value: string) {
@@ -146,130 +80,39 @@ function parseNumber(value: string) {
   const number = Number(value.replace(",", "."));
   return Number.isFinite(number) ? number : null;
 }
-
-function draftValue(value: number | null) {
-  return value === null ? "" : String(value);
-}
-
+function draftValue(value: number | null) { return value === null ? "" : String(value); }
 function draftsFromAssessment(profile: Profile, questionnaire: Questionnaire): NumericDrafts {
   return {
-    age: draftValue(profile.age),
-    heightCm: draftValue(profile.heightCm),
-    weightKg: draftValue(profile.weightKg),
-    waistCm: draftValue(profile.waistCm),
-    moderateMinutes: draftValue(questionnaire.moderateMinutes),
-    vigorousMinutes: draftValue(questionnaire.vigorousMinutes),
-    strengthSessions: draftValue(questionnaire.strengthSessions),
-    mobilitySessions: draftValue(questionnaire.mobilitySessions),
-    sittingHours: draftValue(questionnaire.sittingHours),
-    sportYears: draftValue(questionnaire.sportYears),
-    sleepHours: draftValue(questionnaire.sleepHours),
-    stressLevel: draftValue(questionnaire.stressLevel),
-    fatigueLevel: draftValue(questionnaire.fatigueLevel),
-    fruitVegServingsPerDay: draftValue(questionnaire.fruitVegServingsPerDay),
-    legumesPerWeek: draftValue(questionnaire.legumesPerWeek),
-    sugaryDrinksPerWeek: draftValue(questionnaire.sugaryDrinksPerWeek),
-    nutsSeedsPerWeek: draftValue(questionnaire.nutsSeedsPerWeek),
-    fattyFishPerWeek: draftValue(questionnaire.fattyFishPerWeek),
-    processedMeatPerWeek: draftValue(questionnaire.processedMeatPerWeek),
-    alcoholDrinksPerWeek: draftValue(questionnaire.alcoholDrinksPerWeek),
-    systolic: draftValue(questionnaire.systolic),
-    diastolic: draftValue(questionnaire.diastolic),
+    age: draftValue(profile.age), heightCm: draftValue(profile.heightCm), weightKg: draftValue(profile.weightKg), waistCm: draftValue(profile.waistCm),
+    moderateMinutes: draftValue(questionnaire.moderateMinutes), vigorousMinutes: draftValue(questionnaire.vigorousMinutes), strengthSessions: draftValue(questionnaire.strengthSessions),
+    mobilitySessions: draftValue(questionnaire.mobilitySessions), sittingHours: draftValue(questionnaire.sittingHours), sportYears: draftValue(questionnaire.sportYears),
+    sleepHours: draftValue(questionnaire.sleepHours), stressLevel: draftValue(questionnaire.stressLevel), fatigueLevel: draftValue(questionnaire.fatigueLevel),
+    fruitVegServingsPerDay: draftValue(questionnaire.fruitVegServingsPerDay), legumesPerWeek: draftValue(questionnaire.legumesPerWeek),
+    sugaryDrinksPerWeek: draftValue(questionnaire.sugaryDrinksPerWeek), nutsSeedsPerWeek: draftValue(questionnaire.nutsSeedsPerWeek),
+    fattyFishPerWeek: draftValue(questionnaire.fattyFishPerWeek), processedMeatPerWeek: draftValue(questionnaire.processedMeatPerWeek),
+    alcoholDrinksPerWeek: draftValue(questionnaire.alcoholDrinksPerWeek), systolic: draftValue(questionnaire.systolic), diastolic: draftValue(questionnaire.diastolic),
     restingHeartRate: draftValue(questionnaire.restingHeartRate)
   };
 }
-
 function profileFromDrafts(profile: Profile, drafts: NumericDrafts) {
-  return normalizeProfile({
-    ...profile,
-    age: parseNumber(drafts.age) ?? profile.age,
-    heightCm: parseNumber(drafts.heightCm) ?? profile.heightCm,
-    weightKg: parseNumber(drafts.weightKg) ?? profile.weightKg,
-    waistCm: parseNumber(drafts.waistCm)
-  });
+  return normalizeProfile({ ...profile, age: parseNumber(drafts.age) ?? profile.age, heightCm: parseNumber(drafts.heightCm) ?? profile.heightCm, weightKg: parseNumber(drafts.weightKg) ?? profile.weightKg, waistCm: parseNumber(drafts.waistCm) });
 }
-
 function questionnaireFromDrafts(questionnaire: Questionnaire, drafts: NumericDrafts) {
   return normalizeQuestionnaire({
-    ...questionnaire,
-    moderateMinutes: parseNumber(drafts.moderateMinutes),
-    vigorousMinutes: parseNumber(drafts.vigorousMinutes),
-    strengthSessions: parseNumber(drafts.strengthSessions),
-    mobilitySessions: parseNumber(drafts.mobilitySessions),
-    sittingHours: parseNumber(drafts.sittingHours),
-    sportYears: parseNumber(drafts.sportYears),
-    sleepHours: parseNumber(drafts.sleepHours),
-    stressLevel: parseNumber(drafts.stressLevel),
-    fatigueLevel: parseNumber(drafts.fatigueLevel),
-    fruitVegServingsPerDay: parseNumber(drafts.fruitVegServingsPerDay),
-    legumesPerWeek: parseNumber(drafts.legumesPerWeek),
-    sugaryDrinksPerWeek: parseNumber(drafts.sugaryDrinksPerWeek),
-    nutsSeedsPerWeek: parseNumber(drafts.nutsSeedsPerWeek),
-    fattyFishPerWeek: parseNumber(drafts.fattyFishPerWeek),
-    processedMeatPerWeek: parseNumber(drafts.processedMeatPerWeek),
-    alcoholDrinksPerWeek: parseNumber(drafts.alcoholDrinksPerWeek),
-    systolic: parseNumber(drafts.systolic),
-    diastolic: parseNumber(drafts.diastolic),
-    restingHeartRate: parseNumber(drafts.restingHeartRate)
+    ...questionnaire, moderateMinutes: parseNumber(drafts.moderateMinutes), vigorousMinutes: parseNumber(drafts.vigorousMinutes),
+    strengthSessions: parseNumber(drafts.strengthSessions), mobilitySessions: parseNumber(drafts.mobilitySessions), sittingHours: parseNumber(drafts.sittingHours),
+    sportYears: parseNumber(drafts.sportYears), sleepHours: parseNumber(drafts.sleepHours), stressLevel: parseNumber(drafts.stressLevel), fatigueLevel: parseNumber(drafts.fatigueLevel),
+    fruitVegServingsPerDay: parseNumber(drafts.fruitVegServingsPerDay), legumesPerWeek: parseNumber(drafts.legumesPerWeek), sugaryDrinksPerWeek: parseNumber(drafts.sugaryDrinksPerWeek),
+    nutsSeedsPerWeek: parseNumber(drafts.nutsSeedsPerWeek), fattyFishPerWeek: parseNumber(drafts.fattyFishPerWeek), processedMeatPerWeek: parseNumber(drafts.processedMeatPerWeek),
+    alcoholDrinksPerWeek: parseNumber(drafts.alcoholDrinksPerWeek), systolic: parseNumber(drafts.systolic), diastolic: parseNumber(drafts.diastolic), restingHeartRate: parseNumber(drafts.restingHeartRate)
   });
 }
 
-function NumberField({
-  label,
-  value,
-  onChange,
-  suffix,
-  decimal = false
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  suffix?: string;
-  decimal?: boolean;
-}) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      <div className="inputWithSuffix">
-        <input
-          inputMode={decimal ? "decimal" : "numeric"}
-          type="text"
-          value={value}
-          autoComplete="off"
-          onFocus={(event) => event.currentTarget.select()}
-          onChange={(event) => onChange(event.currentTarget.value)}
-        />
-        {suffix ? <small>{suffix}</small> : null}
-      </div>
-    </label>
-  );
+function NumberField({ label, value, onChange, suffix, decimal = false }: { label: string; value: string; onChange: (value: string) => void; suffix?: string; decimal?: boolean }) {
+  return <label className="field"><span>{label}</span><div className="inputWithSuffix"><input inputMode={decimal ? "decimal" : "numeric"} type="text" value={value} autoComplete="off" onFocus={(event) => event.currentTarget.select()} onChange={(event) => onChange(event.currentTarget.value)} />{suffix ? <small>{suffix}</small> : null}</div></label>;
 }
-
-function SelectField({
-  label,
-  value,
-  options,
-  language,
-  onChange
-}: {
-  label: string;
-  value: string;
-  options: Option[];
-  language: Language;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.currentTarget.value)}>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {translate(language, option.key)}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
+function SelectField({ label, value, options, language, onChange }: { label: string; value: string; options: Option[]; language: Language; onChange: (value: string) => void }) {
+  return <label className="field"><span>{label}</span><select value={value} onChange={(event) => onChange(event.currentTarget.value)}>{options.map((option) => <option key={option.value} value={option.value}>{translate(language, option.key)}</option>)}</select></label>;
 }
 
 export default function HomePage() {
@@ -278,233 +121,79 @@ export default function HomePage() {
   const [questionnaire, setQuestionnaire] = useState<Questionnaire>(defaultQuestionnaire);
   const [drafts, setDrafts] = useState<NumericDrafts>(() => draftsFromAssessment(defaultProfile, defaultQuestionnaire));
   const [saved, setSaved] = useState(false);
-
+  const [activeView, setActiveView] = useState<"assessment" | "priorities">("assessment");
   const t = (key: string) => translate(language, key);
 
   useEffect(() => {
     try {
       const storedLanguage = window.localStorage.getItem(LANGUAGE_KEY);
-      if (storedLanguage === "fr" || storedLanguage === "en") setLanguage(storedLanguage);
+      if (storedLanguage === "fr" || storedLanguage === "en" || storedLanguage === "it" || storedLanguage === "de") setLanguage(storedLanguage);
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as { profile?: Partial<Profile>; questionnaire?: Partial<Questionnaire> };
         const storedProfile = normalizeProfile(parsed.profile);
         const storedQuestionnaire = normalizeQuestionnaire(parsed.questionnaire);
-        setProfile(storedProfile);
-        setQuestionnaire(storedQuestionnaire);
-        setDrafts(draftsFromAssessment(storedProfile, storedQuestionnaire));
+        setProfile(storedProfile); setQuestionnaire(storedQuestionnaire); setDrafts(draftsFromAssessment(storedProfile, storedQuestionnaire));
       }
     } catch {
-      setProfile(defaultProfile);
-      setQuestionnaire(defaultQuestionnaire);
-      setDrafts(draftsFromAssessment(defaultProfile, defaultQuestionnaire));
+      setProfile(defaultProfile); setQuestionnaire(defaultQuestionnaire); setDrafts(draftsFromAssessment(defaultProfile, defaultQuestionnaire));
     }
   }, []);
-
-  useEffect(() => {
-    document.documentElement.lang = language;
-    window.localStorage.setItem(LANGUAGE_KEY, language);
-  }, [language]);
+  useEffect(() => { document.documentElement.lang = language; window.localStorage.setItem(LANGUAGE_KEY, language); }, [language]);
 
   const effectiveProfile = useMemo(() => profileFromDrafts(profile, drafts), [profile, drafts]);
   const effectiveQuestionnaire = useMemo(() => questionnaireFromDrafts(questionnaire, drafts), [questionnaire, drafts]);
-  const result = useMemo(
-    () => calculateBiologicalAge(effectiveProfile, effectiveQuestionnaire),
-    [effectiveProfile, effectiveQuestionnaire]
-  );
+  const result = useMemo(() => calculateBiologicalAge(effectiveProfile, effectiveQuestionnaire), [effectiveProfile, effectiveQuestionnaire]);
+  const priorities = useMemo(() => calculateLongevityPriorities(effectiveProfile, effectiveQuestionnaire, result), [effectiveProfile, effectiveQuestionnaire, result]);
 
-  function updateDraft(field: NumericField, value: string) {
-    setSaved(false);
-    setDrafts((current) => ({ ...current, [field]: value }));
-  }
-
-  function updateQuestionnaire<K extends keyof Questionnaire>(field: K, value: Questionnaire[K]) {
-    setSaved(false);
-    setQuestionnaire((current) => ({ ...current, [field]: value }));
-  }
-
+  function updateDraft(field: NumericField, value: string) { setSaved(false); setDrafts((current) => ({ ...current, [field]: value })); }
+  function updateQuestionnaire<K extends keyof Questionnaire>(field: K, value: Questionnaire[K]) { setSaved(false); setQuestionnaire((current) => ({ ...current, [field]: value })); }
   function saveAssessment() {
-    setProfile(effectiveProfile);
-    setQuestionnaire(effectiveQuestionnaire);
-    setDrafts(draftsFromAssessment(effectiveProfile, effectiveQuestionnaire));
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ profile: effectiveProfile, questionnaire: effectiveQuestionnaire })
-    );
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2200);
+    setProfile(effectiveProfile); setQuestionnaire(effectiveQuestionnaire); setDrafts(draftsFromAssessment(effectiveProfile, effectiveQuestionnaire));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ profile: effectiveProfile, questionnaire: effectiveQuestionnaire }));
+    setSaved(true); window.setTimeout(() => setSaved(false), 2200);
   }
-
-  function resetAssessment() {
-    setProfile(defaultProfile);
-    setQuestionnaire(defaultQuestionnaire);
-    setDrafts(draftsFromAssessment(defaultProfile, defaultQuestionnaire));
-    setSaved(false);
-    window.localStorage.removeItem(STORAGE_KEY);
-  }
-
-  function formatAge(years: number, months: number) {
-    return `${years} ${t("years")}, ${months} ${t("months")}`;
-  }
-
+  function resetAssessment() { setProfile(defaultProfile); setQuestionnaire(defaultQuestionnaire); setDrafts(draftsFromAssessment(defaultProfile, defaultQuestionnaire)); setSaved(false); window.localStorage.removeItem(STORAGE_KEY); }
+  function formatAge(years: number, months: number) { return `${years} ${t("years")}, ${months} ${t("months")}`; }
   function formatDelta(months: number) {
     if (months === 0) return t("sameAge");
-    const absolute = Math.abs(months);
-    const years = Math.floor(absolute / 12);
-    const remainingMonths = absolute % 12;
+    const absolute = Math.abs(months); const years = Math.floor(absolute / 12); const remainingMonths = absolute % 12;
     const parts = [years ? `${years} ${t("years")}` : "", remainingMonths ? `${remainingMonths} ${t("months")}` : ""].filter(Boolean);
     return `${parts.join(" ")} ${months < 0 ? t("younger") : t("older")}`;
   }
-
   const confidenceLabel = t(`confidence${result.confidence[0].toUpperCase()}${result.confidence.slice(1)}`);
 
-  return (
-    <main>
-      <header className="topbar">
-        <a className="brand" href="#top">{t("appName")}</a>
-        <label className="languagePicker">
-          <span>{t("language")}</span>
-          <select value={language} onChange={(event) => setLanguage(event.currentTarget.value as Language)}>
-            {languageOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-        </label>
-      </header>
+  return <main>
+    <header className="topbar">
+      <a className="brand" href="#top">{t("appName")}</a>
+      <div className="topbarActions">
+        <nav className="viewTabs" aria-label={t("prioritiesTab")}>
+          <button type="button" className={activeView === "assessment" ? "active" : ""} onClick={() => setActiveView("assessment")}>{t("breakdownTitle")}</button>
+          <button type="button" className={activeView === "priorities" ? "active" : ""} onClick={() => setActiveView("priorities")}>{t("prioritiesTab")}</button>
+        </nav>
+        <label className="languagePicker"><span>{t("language")}</span><select value={language} onChange={(event) => setLanguage(event.currentTarget.value as Language)}>{languageOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+      </div>
+    </header>
 
-      <section className="hero" id="top">
-        <div>
-          <p className="eyebrow">{t("eyebrow")}</p>
-          <h1>{t("heroTitle")}</h1>
-          <p className="heroText">{t("heroText")}</p>
-          <div className="actions">
-            <button className="primary" type="button" onClick={saveAssessment}>{saved ? t("saved") : t("save")}</button>
-            <button className="secondary" type="button" onClick={resetAssessment}>{t("reset")}</button>
-          </div>
-        </div>
+    <section className="hero" id="top"><div><p className="eyebrow">{t("eyebrow")}</p><h1>{t("heroTitle")}</h1><p className="heroText">{t("heroText")}</p><div className="actions"><button className="primary" type="button" onClick={saveAssessment}>{saved ? t("saved") : t("save")}</button><button className="secondary" type="button" onClick={resetAssessment}>{t("reset")}</button></div></div>
+      <aside className="resultCard" aria-live="polite"><p className="eyebrow">{t("result")}</p><div className="biologicalAge"><span>{t("biologicalAge")}</span><strong>{formatAge(result.biologicalAgeYears, result.biologicalAgeMonths)}</strong></div><div className="metricGrid"><article><span>{t("chronologicalAge")}</span><strong>{result.chronologicalAge} {t("years")}</strong></article><article><span>{t("difference")}</span><strong>{formatDelta(result.deltaMonths)}</strong></article><article><span>{t("score")}</span><strong>{result.score} / 100</strong></article><article><span>{t("confidence")}</span><strong>{confidenceLabel}</strong></article></div></aside>
+    </section>
 
-        <aside className="resultCard" aria-live="polite">
-          <p className="eyebrow">{t("result")}</p>
-          <div className="biologicalAge">
-            <span>{t("biologicalAge")}</span>
-            <strong>{formatAge(result.biologicalAgeYears, result.biologicalAgeMonths)}</strong>
-          </div>
-          <div className="metricGrid">
-            <article><span>{t("chronologicalAge")}</span><strong>{result.chronologicalAge} {t("years")}</strong></article>
-            <article><span>{t("difference")}</span><strong>{formatDelta(result.deltaMonths)}</strong></article>
-            <article><span>{t("score")}</span><strong>{result.score} / 100</strong></article>
-            <article><span>{t("confidence")}</span><strong>{confidenceLabel}</strong></article>
-          </div>
-        </aside>
-      </section>
-
-      <section className="assessmentLayout">
-        <form className="assessmentForm" onSubmit={(event) => { event.preventDefault(); saveAssessment(); }}>
-          <fieldset>
-            <legend>{t("profileTitle")}</legend>
-            <p>{t("profileText")}</p>
-            <div className="formGrid">
-              <NumberField label={t("age")} value={drafts.age} onChange={(value) => updateDraft("age", value)} suffix={t("years")} />
-              <NumberField label={t("height")} value={drafts.heightCm} onChange={(value) => updateDraft("heightCm", value)} suffix="cm" />
-              <NumberField label={t("weight")} value={drafts.weightKg} onChange={(value) => updateDraft("weightKg", value)} suffix="kg" decimal />
-              <NumberField label={t("waist")} value={drafts.waistCm} onChange={(value) => updateDraft("waistCm", value)} suffix={`cm · ${t("optional")}`} decimal />
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>{t("movementTitle")}</legend>
-            <div className="formGrid">
-              <SelectField label={t("sportType")} value={questionnaire.sportType} options={sportOptions} language={language} onChange={(value) => updateQuestionnaire("sportType", value as SportType)} />
-              <NumberField label={t("moderateMinutes")} value={drafts.moderateMinutes} onChange={(value) => updateDraft("moderateMinutes", value)} />
-              <NumberField label={t("vigorousMinutes")} value={drafts.vigorousMinutes} onChange={(value) => updateDraft("vigorousMinutes", value)} />
-              <NumberField label={t("strengthSessions")} value={drafts.strengthSessions} onChange={(value) => updateDraft("strengthSessions", value)} />
-              <NumberField label={t("mobilitySessions")} value={drafts.mobilitySessions} onChange={(value) => updateDraft("mobilitySessions", value)} />
-              <NumberField label={t("sittingHours")} value={drafts.sittingHours} onChange={(value) => updateDraft("sittingHours", value)} decimal />
-              <NumberField label={t("sportYears")} value={drafts.sportYears} onChange={(value) => updateDraft("sportYears", value)} />
-              <SelectField label={t("socialPractice")} value={questionnaire.socialPractice} options={socialOptions} language={language} onChange={(value) => updateQuestionnaire("socialPractice", value as SocialPractice)} />
-              <SelectField label={t("injuries")} value={questionnaire.injuries} options={injuryOptions} language={language} onChange={(value) => updateQuestionnaire("injuries", value as InjuryStatus)} />
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>{t("recoveryTitle")}</legend>
-            <div className="formGrid">
-              <NumberField label={t("sleepHours")} value={drafts.sleepHours} onChange={(value) => updateDraft("sleepHours", value)} decimal />
-              <SelectField label={t("sleepQuality")} value={questionnaire.sleepQuality} options={sleepOptions} language={language} onChange={(value) => updateQuestionnaire("sleepQuality", value as SleepQuality)} />
-              <NumberField label={t("stressLevel")} value={drafts.stressLevel} onChange={(value) => updateDraft("stressLevel", value)} />
-              <NumberField label={t("fatigueLevel")} value={drafts.fatigueLevel} onChange={(value) => updateDraft("fatigueLevel", value)} />
-              <SelectField label={t("energyStability")} value={questionnaire.energyStability} options={energyOptions} language={language} onChange={(value) => updateQuestionnaire("energyStability", value as EnergyStability)} />
-              <SelectField label={t("emotionalEating")} value={questionnaire.emotionalEating} options={frequencyOptions} language={language} onChange={(value) => updateQuestionnaire("emotionalEating", value as Frequency)} />
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>{t("nutritionTitle")}</legend>
-            <div className="formGrid">
-              <NumberField label={t("fruitVegServingsPerDay")} value={drafts.fruitVegServingsPerDay} onChange={(value) => updateDraft("fruitVegServingsPerDay", value)} decimal />
-              <NumberField label={t("legumesPerWeek")} value={drafts.legumesPerWeek} onChange={(value) => updateDraft("legumesPerWeek", value)} />
-              <SelectField label={t("wholeGrains")} value={questionnaire.wholeGrains} options={frequencyOptions} language={language} onChange={(value) => updateQuestionnaire("wholeGrains", value as Frequency)} />
-              <SelectField label={t("ultraProcessed")} value={questionnaire.ultraProcessed} options={frequencyOptions} language={language} onChange={(value) => updateQuestionnaire("ultraProcessed", value as Frequency)} />
-              <NumberField label={t("sugaryDrinksPerWeek")} value={drafts.sugaryDrinksPerWeek} onChange={(value) => updateDraft("sugaryDrinksPerWeek", value)} />
-              <SelectField label={t("proteinAtMeals")} value={questionnaire.proteinAtMeals} options={frequencyOptions} language={language} onChange={(value) => updateQuestionnaire("proteinAtMeals", value as Frequency)} />
-              <NumberField label={t("nutsSeedsPerWeek")} value={drafts.nutsSeedsPerWeek} onChange={(value) => updateDraft("nutsSeedsPerWeek", value)} />
-              <NumberField label={t("fattyFishPerWeek")} value={drafts.fattyFishPerWeek} onChange={(value) => updateDraft("fattyFishPerWeek", value)} />
-              <NumberField label={t("processedMeatPerWeek")} value={drafts.processedMeatPerWeek} onChange={(value) => updateDraft("processedMeatPerWeek", value)} />
-              <SelectField label={t("appetiteChange")} value={questionnaire.appetiteChange} options={changeOptions} language={language} onChange={(value) => updateQuestionnaire("appetiteChange", value as ChangeStatus)} />
-              <SelectField label={t("unintentionalWeightLoss")} value={questionnaire.unintentionalWeightLoss} options={changeOptions} language={language} onChange={(value) => updateQuestionnaire("unintentionalWeightLoss", value as ChangeStatus)} />
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>{t("habitsTitle")}</legend>
-            <div className="formGrid">
-              <SelectField label={t("tobacco")} value={questionnaire.tobacco} options={tobaccoOptions} language={language} onChange={(value) => updateQuestionnaire("tobacco", value as TobaccoStatus)} />
-              <NumberField label={t("alcoholDrinksPerWeek")} value={drafts.alcoholDrinksPerWeek} onChange={(value) => updateDraft("alcoholDrinksPerWeek", value)} />
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>{t("vitalsTitle")}</legend>
-            <div className="formGrid">
-              <NumberField label={t("systolic")} value={drafts.systolic} onChange={(value) => updateDraft("systolic", value)} suffix="mmHg" />
-              <NumberField label={t("diastolic")} value={drafts.diastolic} onChange={(value) => updateDraft("diastolic", value)} suffix="mmHg" />
-              <NumberField label={t("restingHeartRate")} value={drafts.restingHeartRate} onChange={(value) => updateDraft("restingHeartRate", value)} suffix="bpm" />
-            </div>
-          </fieldset>
-
-          <button className="primary submitButton" type="submit">{saved ? t("saved") : t("save")}</button>
-        </form>
-
-        <aside className="detailsColumn">
-          <section className="detailCard stickyCard">
-            <p className="eyebrow">{t("breakdownTitle")}</p>
-            <div className="scoreList">
-              {result.components.map((component) => {
-                const percentage = Math.round((component.score / component.max) * 100);
-                return (
-                  <article key={component.key}>
-                    <div><span>{t(componentTranslation[component.key])}</span><strong>{component.score} / {component.max}</strong></div>
-                    <progress value={percentage} max="100" aria-label={`${t(componentTranslation[component.key])}: ${percentage}%`} />
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="detailCard">
-            <h2>{t("favorableTitle")}</h2>
-            <ul>{result.favorable.length ? result.favorable.map((factor) => <li key={factor}>{t(factorTranslation[factor])}</li>) : <li>{t("noneReported")}</li>}</ul>
-          </section>
-
-          <section className="detailCard warningCard">
-            <h2>{t("watchTitle")}</h2>
-            <ul>{result.unfavorable.length ? result.unfavorable.map((factor) => <li key={factor}>{t(factorTranslation[factor])}</li>) : <li>{t("noneReported")}</li>}</ul>
-          </section>
-
-          <section className="detailCard methodCard">
-            <h2>{t("methodTitle")}</h2>
-            <p>{t("methodText")}</p>
-          </section>
-        </aside>
-      </section>
-    </main>
-  );
+    {activeView === "assessment" ? <section className="assessmentLayout">
+      <form className="assessmentForm" onSubmit={(event) => { event.preventDefault(); saveAssessment(); }}>
+        <fieldset><legend>{t("profileTitle")}</legend><p>{t("profileText")}</p><div className="formGrid"><NumberField label={t("age")} value={drafts.age} onChange={(value) => updateDraft("age", value)} suffix={t("years")} /><NumberField label={t("height")} value={drafts.heightCm} onChange={(value) => updateDraft("heightCm", value)} suffix="cm" /><NumberField label={t("weight")} value={drafts.weightKg} onChange={(value) => updateDraft("weightKg", value)} suffix="kg" decimal /><NumberField label={t("waist")} value={drafts.waistCm} onChange={(value) => updateDraft("waistCm", value)} suffix={`cm · ${t("optional")}`} decimal /></div></fieldset>
+        <fieldset><legend>{t("movementTitle")}</legend><div className="formGrid"><SelectField label={t("sportType")} value={questionnaire.sportType} options={sportOptions} language={language} onChange={(value) => updateQuestionnaire("sportType", value as SportType)} /><NumberField label={t("moderateMinutes")} value={drafts.moderateMinutes} onChange={(value) => updateDraft("moderateMinutes", value)} /><NumberField label={t("vigorousMinutes")} value={drafts.vigorousMinutes} onChange={(value) => updateDraft("vigorousMinutes", value)} /><NumberField label={t("strengthSessions")} value={drafts.strengthSessions} onChange={(value) => updateDraft("strengthSessions", value)} /><NumberField label={t("mobilitySessions")} value={drafts.mobilitySessions} onChange={(value) => updateDraft("mobilitySessions", value)} /><NumberField label={t("sittingHours")} value={drafts.sittingHours} onChange={(value) => updateDraft("sittingHours", value)} decimal /><NumberField label={t("sportYears")} value={drafts.sportYears} onChange={(value) => updateDraft("sportYears", value)} /><SelectField label={t("socialPractice")} value={questionnaire.socialPractice} options={socialOptions} language={language} onChange={(value) => updateQuestionnaire("socialPractice", value as SocialPractice)} /><SelectField label={t("injuries")} value={questionnaire.injuries} options={injuryOptions} language={language} onChange={(value) => updateQuestionnaire("injuries", value as InjuryStatus)} /></div></fieldset>
+        <fieldset><legend>{t("recoveryTitle")}</legend><div className="formGrid"><NumberField label={t("sleepHours")} value={drafts.sleepHours} onChange={(value) => updateDraft("sleepHours", value)} decimal /><SelectField label={t("sleepQuality")} value={questionnaire.sleepQuality} options={sleepOptions} language={language} onChange={(value) => updateQuestionnaire("sleepQuality", value as SleepQuality)} /><NumberField label={t("stressLevel")} value={drafts.stressLevel} onChange={(value) => updateDraft("stressLevel", value)} /><NumberField label={t("fatigueLevel")} value={drafts.fatigueLevel} onChange={(value) => updateDraft("fatigueLevel", value)} /><SelectField label={t("energyStability")} value={questionnaire.energyStability} options={energyOptions} language={language} onChange={(value) => updateQuestionnaire("energyStability", value as EnergyStability)} /><SelectField label={t("emotionalEating")} value={questionnaire.emotionalEating} options={frequencyOptions} language={language} onChange={(value) => updateQuestionnaire("emotionalEating", value as Frequency)} /></div></fieldset>
+        <fieldset><legend>{t("nutritionTitle")}</legend><div className="formGrid"><NumberField label={t("fruitVegServingsPerDay")} value={drafts.fruitVegServingsPerDay} onChange={(value) => updateDraft("fruitVegServingsPerDay", value)} decimal /><NumberField label={t("legumesPerWeek")} value={drafts.legumesPerWeek} onChange={(value) => updateDraft("legumesPerWeek", value)} /><SelectField label={t("wholeGrains")} value={questionnaire.wholeGrains} options={frequencyOptions} language={language} onChange={(value) => updateQuestionnaire("wholeGrains", value as Frequency)} /><SelectField label={t("ultraProcessed")} value={questionnaire.ultraProcessed} options={frequencyOptions} language={language} onChange={(value) => updateQuestionnaire("ultraProcessed", value as Frequency)} /><NumberField label={t("sugaryDrinksPerWeek")} value={drafts.sugaryDrinksPerWeek} onChange={(value) => updateDraft("sugaryDrinksPerWeek", value)} /><SelectField label={t("proteinAtMeals")} value={questionnaire.proteinAtMeals} options={frequencyOptions} language={language} onChange={(value) => updateQuestionnaire("proteinAtMeals", value as Frequency)} /><NumberField label={t("nutsSeedsPerWeek")} value={drafts.nutsSeedsPerWeek} onChange={(value) => updateDraft("nutsSeedsPerWeek", value)} /><NumberField label={t("fattyFishPerWeek")} value={drafts.fattyFishPerWeek} onChange={(value) => updateDraft("fattyFishPerWeek", value)} /><NumberField label={t("processedMeatPerWeek")} value={drafts.processedMeatPerWeek} onChange={(value) => updateDraft("processedMeatPerWeek", value)} /><SelectField label={t("appetiteChange")} value={questionnaire.appetiteChange} options={changeOptions} language={language} onChange={(value) => updateQuestionnaire("appetiteChange", value as ChangeStatus)} /><SelectField label={t("unintentionalWeightLoss")} value={questionnaire.unintentionalWeightLoss} options={changeOptions} language={language} onChange={(value) => updateQuestionnaire("unintentionalWeightLoss", value as ChangeStatus)} /></div></fieldset>
+        <fieldset><legend>{t("habitsTitle")}</legend><div className="formGrid"><SelectField label={t("tobacco")} value={questionnaire.tobacco} options={tobaccoOptions} language={language} onChange={(value) => updateQuestionnaire("tobacco", value as TobaccoStatus)} /><NumberField label={t("alcoholDrinksPerWeek")} value={drafts.alcoholDrinksPerWeek} onChange={(value) => updateDraft("alcoholDrinksPerWeek", value)} /></div></fieldset>
+        <fieldset><legend>{t("vitalsTitle")}</legend><div className="formGrid"><NumberField label={t("systolic")} value={drafts.systolic} onChange={(value) => updateDraft("systolic", value)} suffix="mmHg" /><NumberField label={t("diastolic")} value={drafts.diastolic} onChange={(value) => updateDraft("diastolic", value)} suffix="mmHg" /><NumberField label={t("restingHeartRate")} value={drafts.restingHeartRate} onChange={(value) => updateDraft("restingHeartRate", value)} suffix="bpm" /></div></fieldset>
+        <button className="primary submitButton" type="submit">{saved ? t("saved") : t("save")}</button>
+      </form>
+      <aside className="detailsColumn"><section className="detailCard stickyCard"><p className="eyebrow">{t("breakdownTitle")}</p><div className="scoreList">{result.components.map((component) => { const percentage = Math.round((component.score / component.max) * 100); return <article key={component.key}><div><span>{t(componentTranslation[component.key])}</span><strong>{component.score} / {component.max}</strong></div><progress value={percentage} max="100" aria-label={`${t(componentTranslation[component.key])}: ${percentage}%`} /></article>; })}</div></section><section className="detailCard"><h2>{t("favorableTitle")}</h2><ul>{result.favorable.length ? result.favorable.map((factor) => <li key={factor}>{t(factorTranslation[factor])}</li>) : <li>{t("noneReported")}</li>}</ul></section><section className="detailCard warningCard"><h2>{t("watchTitle")}</h2><ul>{result.unfavorable.length ? result.unfavorable.map((factor) => <li key={factor}>{t(factorTranslation[factor])}</li>) : <li>{t("noneReported")}</li>}</ul></section><section className="detailCard methodCard"><h2>{t("methodTitle")}</h2><p>{t("methodText")}</p></section></aside>
+    </section> : <section className="prioritiesPanel">
+      <header className="prioritiesHeader"><p className="eyebrow">{t("prioritiesTab")}</p><h2>{t("prioritiesTitle")}</h2><p>{t("prioritiesIntro")}</p></header>
+      <div className="priorityGrid">{priorities.length ? priorities.map((priority, index) => <article className="priorityCard" key={priority.key}><div className="priorityRank">{index + 1}</div><div className="priorityImpact"><span>{t("priorityImpact")}</span><strong>{priority.severity}%</strong></div><h3>{t(priority.titleKey)}</h3><div><strong>{t("priorityAction")}</strong><p>{t(priority.actionKey)}</p></div><div><strong>{t("priorityWhy")}</strong><p>{t(priority.rationaleKey)}</p></div></article>) : <article className="detailCard"><p>{t("prioritiesEmpty")}</p></article>}</div>
+      <section className="supplementCard"><div><p className="eyebrow">{t("supplementTitle")}</p><h2>{t("supplementTitle")}</h2><p>{t("supplementIntro")}</p></div><div className="supplementGrid"><article><h3>{t("supplementComposition")}</h3><p>{t("supplementCompositionText")}</p></article><article><h3>{t("supplementEvidence")}</h3><p>{t("supplementEvidenceText")}</p></article><article className="supplementWarning"><h3>{t("supplementCaution")}</h3><p>{t("supplementCautionText")}</p></article></div><p className="supplementRule">{t("supplementRule")}</p></section>
+    </section>}
+  </main>;
 }
