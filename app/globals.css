@@ -32,7 +32,7 @@ main { width: min(1440px, calc(100% - 40px)); margin: 0 auto; padding-bottom: 96
 .topbar {
   position: sticky; top: 0; z-index: 30;
   display: flex; justify-content: space-between; align-items: center; gap: 28px;
-  margin: 0 -20px 36px; padding: 18px 30px;
+  margin: 0 -20px 20px; padding: 18px 30px;
   color: white; background: rgba(7,24,39,.97);
   border-bottom: 1px solid rgba(201,163,95,.45);
   box-shadow: 0 14px 42px rgba(7,24,39,.2);
@@ -49,6 +49,21 @@ main { width: min(1440px, calc(100% - 40px)); margin: 0 auto; padding-bottom: 96
 .languagePicker select { border: 1px solid rgba(201,163,95,.55); border-radius: 999px; background: rgba(255,255,255,.035); color: white; padding: 10px 34px 10px 14px; }
 .languagePicker select option { color: var(--ink); }
 
+.clinicBand {
+  margin: 0 0 20px;
+  padding: 12px 18px;
+  border: 1px solid rgba(154,107,46,.34);
+  border-radius: 14px;
+  color: #6f4e20;
+  background: linear-gradient(90deg,#f3d58f 0%,#ffe8a8 52%,#e7c56e 100%);
+  box-shadow: 0 10px 28px rgba(154,107,46,.14);
+  font-size: .72rem;
+  font-weight: 850;
+  letter-spacing: .12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
 .hero { display: grid; grid-template-columns: minmax(0,1.08fr) minmax(360px,.92fr); gap: 28px; align-items: stretch; margin-bottom: 34px; }
 .hero > div,.resultCard,.formSection,.detailCard { border: 1px solid rgba(201,163,95,.22); background: var(--card); box-shadow: var(--shadow); }
 .hero > div { position: relative; overflow: hidden; min-height: 520px; display: grid; align-content: center; padding: clamp(48px,6vw,88px); border-radius: 28px; background: linear-gradient(90deg,rgba(255,253,249,.985) 0 62%,rgba(255,253,249,.76) 100%), radial-gradient(circle at 88% 38%,rgba(201,163,95,.18),transparent 19rem), linear-gradient(135deg,#fffdf9,#ece1d2); }
@@ -57,6 +72,14 @@ main { width: min(1440px, calc(100% - 40px)); margin: 0 auto; padding-bottom: 96
 .eyebrow { position: relative; z-index: 1; margin: 0 0 18px; color: #9a6b2e; font-size: .72rem; font-weight: 850; letter-spacing: .2em; text-transform: uppercase; }
 h1 { position: relative; z-index: 1; max-width: 11ch; margin: 0; font-family: Georgia,"Times New Roman",serif; font-size: clamp(3.15rem,5.5vw,6.2rem); line-height: .93; letter-spacing: -.052em; font-weight: 500; }
 .heroText { position: relative; z-index: 1; max-width: 600px; margin: 30px 0 0; color: #626a70; font-size: clamp(.98rem,1.25vw,1.12rem); line-height: 1.78; }
+.evidenceCard { position: relative; z-index: 1; margin-top: 28px; padding: 20px 22px; border: 1px solid rgba(201,163,95,.34); border-radius: 18px; background: rgba(255,250,242,.84); box-shadow: 0 14px 36px rgba(47,38,24,.07); }
+.evidenceCardHeader { display: grid; gap: 10px; }
+.evidenceCardHeader > div { display: flex; align-items: center; gap: 10px; }
+.evidenceBadge { display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%; background: var(--navy); color: #f2cf83; font-size: .8rem; font-weight: 900; }
+.evidenceCard h2 { margin: 0; font-family: Georgia,"Times New Roman",serif; font-size: 1.15rem; line-height: 1.1; font-weight: 500; }
+.evidenceCard p { margin: 0; color: #59656f; font-size: .82rem; line-height: 1.55; }
+.evidenceToggle { margin-top: 14px; padding: 0; border: 0; background: transparent; color: #8f632a; font-size: .74rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+.evidenceDetails { margin-top: 14px !important; padding-top: 14px; border-top: 1px solid rgba(201,163,95,.24); }
 .actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
 .primary,.secondary { border-radius: 999px; padding: 14px 22px; font-size: .88rem; font-weight: 800; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
 .primary { border: 1px solid var(--gold); background: var(--navy); color: white; box-shadow: 0 14px 30px rgba(7,24,39,.16); }
@@ -121,7 +144,7 @@ progress::-moz-progress-bar { background: linear-gradient(90deg,#9b743d,#d5b777)
 
 @media (max-width: 760px) {
   main { width: min(100% - 20px,1440px); padding-bottom: 48px; }
-  .topbar { position: relative; top: auto; margin: 0 -10px 20px; padding: 18px 18px 20px; flex-direction: column; align-items: stretch; gap: 16px; border-radius: 0 0 20px 20px; }
+  .topbar { position: relative; top: auto; margin: 0 -10px 12px; padding: 18px 18px 20px; flex-direction: column; align-items: stretch; gap: 16px; border-radius: 0 0 20px 20px; }
   .brand { font-size: .94rem; letter-spacing: .14em; }
   .topbarActions { width: 100%; flex-direction: column; align-items: stretch; gap: 12px; }
   .viewTabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
@@ -131,6 +154,7 @@ progress::-moz-progress-bar { background: linear-gradient(90deg,#9b743d,#d5b777)
   .languagePicker { justify-content: space-between; }
   .languagePicker > span { display: inline; }
   .languagePicker select { min-width: 146px; }
+  .clinicBand { margin-bottom: 14px; padding: 11px 14px; border-radius: 12px; font-size: .62rem; line-height: 1.45; letter-spacing: .1em; }
   .hero { gap: 18px; }
   .hero > div,.resultCard { border-radius: 20px; }
   .hero > div { min-height: 0; padding: 34px 26px 38px; }
@@ -138,6 +162,10 @@ progress::-moz-progress-bar { background: linear-gradient(90deg,#9b743d,#d5b777)
   .hero > div::after { display: none; }
   h1 { max-width: 10.5ch; font-size: clamp(2.45rem,11.5vw,3.55rem); line-height: .97; letter-spacing: -.045em; }
   .heroText { margin-top: 22px; font-size: .96rem; line-height: 1.62; }
+  .evidenceCard { margin-top: 22px; padding: 17px 18px; border-radius: 16px; }
+  .evidenceCard h2 { font-size: 1.02rem; }
+  .evidenceCard p { font-size: .76rem; line-height: 1.5; }
+  .evidenceToggle { font-size: .68rem; line-height: 1.4; text-align: left; }
   .actions { margin-top: 24px; }
   .actions .primary,.actions .secondary { flex: 1 1 140px; }
   .resultCard { padding: 28px 24px; }
