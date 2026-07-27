@@ -1,4 +1,4 @@
-import type { AssessmentResult, ComponentKey, Profile, Questionnaire } from "@/lib/biological-age";
+import type { AssessmentResult, ComponentKey, Profile, Questionnaire, SportType } from "@/lib/biological-age";
 
 export type PriorityKey =
   | "tobacco"
@@ -14,24 +14,23 @@ export type LongevityPriority = {
   key: PriorityKey;
   severity: number;
   titleKey: string;
-  actionKey: string;
   rationaleKey: string;
-  targetKey: string;
   evidenceKey: string;
   estimateMinMonths: number;
   estimateMaxMonths: number;
   confidence: "high" | "medium" | "low";
+  personalizedActions: string[];
 };
 
-const metadata: Record<PriorityKey, Omit<LongevityPriority, "key" | "severity" | "estimateMinMonths" | "estimateMaxMonths">> = {
-  tobacco: { titleKey: "priorityTobaccoTitle", actionKey: "priorityTobaccoAction", rationaleKey: "priorityTobaccoRationale", targetKey: "targetTobacco", evidenceKey: "evidenceTobacco", confidence: "high" },
-  activity: { titleKey: "priorityActivityTitle", actionKey: "priorityActivityAction", rationaleKey: "priorityActivityRationale", targetKey: "targetActivity", evidenceKey: "evidenceActivity", confidence: "high" },
-  sedentary: { titleKey: "prioritySedentaryTitle", actionKey: "prioritySedentaryAction", rationaleKey: "prioritySedentaryRationale", targetKey: "targetSedentary", evidenceKey: "evidenceSedentary", confidence: "low" },
-  sleep: { titleKey: "prioritySleepTitle", actionKey: "prioritySleepAction", rationaleKey: "prioritySleepRationale", targetKey: "targetSleep", evidenceKey: "evidenceSleep", confidence: "low" },
-  nutrition: { titleKey: "priorityNutritionTitle", actionKey: "priorityNutritionAction", rationaleKey: "priorityNutritionRationale", targetKey: "targetNutrition", evidenceKey: "evidenceNutrition", confidence: "medium" },
-  alcohol: { titleKey: "priorityAlcoholTitle", actionKey: "priorityAlcoholAction", rationaleKey: "priorityAlcoholRationale", targetKey: "targetAlcohol", evidenceKey: "evidenceAlcohol", confidence: "low" },
-  stressRecovery: { titleKey: "priorityStressTitle", actionKey: "priorityStressAction", rationaleKey: "priorityStressRationale", targetKey: "targetStress", evidenceKey: "evidenceStress", confidence: "low" },
-  morphology: { titleKey: "priorityMorphologyTitle", actionKey: "priorityMorphologyAction", rationaleKey: "priorityMorphologyRationale", targetKey: "targetMorphology", evidenceKey: "evidenceMorphology", confidence: "low" }
+const metadata: Record<PriorityKey, Omit<LongevityPriority, "key" | "severity" | "estimateMinMonths" | "estimateMaxMonths" | "personalizedActions">> = {
+  tobacco: { titleKey: "priorityTobaccoTitle", rationaleKey: "priorityTobaccoRationale", evidenceKey: "evidenceTobacco", confidence: "high" },
+  activity: { titleKey: "priorityActivityTitle", rationaleKey: "priorityActivityRationale", evidenceKey: "evidenceActivity", confidence: "high" },
+  sedentary: { titleKey: "prioritySedentaryTitle", rationaleKey: "prioritySedentaryRationale", evidenceKey: "evidenceSedentary", confidence: "low" },
+  sleep: { titleKey: "prioritySleepTitle", rationaleKey: "prioritySleepRationale", evidenceKey: "evidenceSleep", confidence: "low" },
+  nutrition: { titleKey: "priorityNutritionTitle", rationaleKey: "priorityNutritionRationale", evidenceKey: "evidenceNutrition", confidence: "medium" },
+  alcohol: { titleKey: "priorityAlcoholTitle", rationaleKey: "priorityAlcoholRationale", evidenceKey: "evidenceAlcohol", confidence: "low" },
+  stressRecovery: { titleKey: "priorityStressTitle", rationaleKey: "priorityStressRationale", evidenceKey: "evidenceStress", confidence: "low" },
+  morphology: { titleKey: "priorityMorphologyTitle", rationaleKey: "priorityMorphologyRationale", evidenceKey: "evidenceMorphology", confidence: "low" }
 };
 
 const weights: Record<PriorityKey, number> = {
@@ -70,6 +69,77 @@ function estimateRange(key: PriorityKey, severity: number, age: number, question
   return [Math.max(1, Math.round(min * factor)), Math.max(2, Math.round(max * factor))];
 }
 
+function activityActions(questionnaire: Questionnaire): string[] {
+  const actions: string[] = [];
+  const moderate = questionnaire.moderateMinutes || 0;
+  const vigorous = questionnaire.vigorousMinutes || 0;
+  const equivalentMinutes = moderate + vigorous * 2;
+  const sportLabels: Partial<Record<SportType, string>> = {
+    walking: "Continuez la marche rapide et augmentez progressivement la durée totale hebdomadaire.",
+    running: "Conservez la course et ajoutez une séance facile si la récupération est bonne.",
+    cycling: "Utilisez le vélo pour atteindre progressivement votre volume cardio hebdomadaire.",
+    swimming: "Conservez la natation et complétez par du renforcement hors de l’eau.",
+    strength: "Gardez la musculation et ajoutez du cardio modéré les jours sans renforcement.",
+    yoga: "Conservez le yoga ou le Pilates et ajoutez une activité cardio régulière.",
+    racket: "Conservez votre sport de raquette et complétez par une séance d’endurance facile.",
+    team: "Conservez votre sport collectif et protégez au moins une journée de récupération.",
+    fitness: "Conservez le fitness ou la danse et équilibrez cardio, force et mobilité."
+  };
+  if (questionnaire.sportType && sportLabels[questionnaire.sportType]) actions.push(sportLabels[questionnaire.sportType] as string);
+  if (equivalentMinutes < 150) actions.push(`Ajoutez environ ${Math.max(30, 150 - equivalentMinutes)} minutes équivalentes d’activité cette semaine, par paliers de 10 à 15 minutes.`);
+  else if (equivalentMinutes < 300) actions.push("Progressez vers 200 à 300 minutes équivalentes par semaine si cela reste confortable.");
+  else actions.push("Maintenez votre volume actuel et concentrez-vous sur la régularité et la récupération.");
+  if ((questionnaire.strengthSessions || 0) < 2) actions.push("Ajoutez 2 séances de renforcement complet par semaine, espacées d’au moins 48 heures.");
+  if ((questionnaire.mobilitySessions || 0) < 2) actions.push("Ajoutez 2 courtes séances de mobilité de 10 à 15 minutes par semaine.");
+  if (questionnaire.injuries === "light" || questionnaire.injuries === "frequent" || questionnaire.injuries === "limited") actions.push("Choisissez une progression sans douleur et faites évaluer toute limitation persistante avant d’augmenter la charge.");
+  return actions.slice(0, 4);
+}
+
+function nutritionActions(questionnaire: Questionnaire): string[] {
+  const actions: string[] = [];
+  const fruitVeg = questionnaire.fruitVegServingsPerDay || 0;
+  const legumes = questionnaire.legumesPerWeek || 0;
+  const fish = questionnaire.fattyFishPerWeek || 0;
+  const nuts = questionnaire.nutsSeedsPerWeek || 0;
+  const sugary = questionnaire.sugaryDrinksPerWeek || 0;
+  const processedMeat = questionnaire.processedMeatPerWeek || 0;
+  if (fruitVeg < 5) actions.push(`Passez de ${fruitVeg} à 5 portions de fruits et légumes par jour en ajoutant une portion tous les 5 à 7 jours.`);
+  if (legumes < 2) actions.push("Planifiez 2 à 3 portions de légumineuses par semaine, en remplacement d’une viande transformée ou d’un plat ultra-transformé.");
+  if (fish < 1) actions.push("Ajoutez 1 à 2 portions de poisson gras par semaine, sauf contre-indication personnelle.");
+  if (nuts < 5) actions.push("Ajoutez une petite poignée de noix ou graines non salées la plupart des jours.");
+  if (sugary > 1) actions.push(`Réduisez les boissons sucrées de ${sugary} à 1 ou moins par semaine, en remplaçant d’abord une consommation sur deux.`);
+  if (processedMeat > 1) actions.push(`Réduisez les viandes transformées de ${processedMeat} à 1 portion ou moins par semaine.`);
+  if (questionnaire.ultraProcessed === "frequent" || questionnaire.ultraProcessed === "daily") actions.push("Remplacez chaque jour un produit ultra-transformé par un aliment peu transformé riche en fibres ou protéines.");
+  if (questionnaire.wholeGrains === "rare") actions.push("Choisissez une version complète pour au moins un féculent quotidien.");
+  return actions.slice(0, 4);
+}
+
+function personalizedActions(key: PriorityKey, profile: Profile, questionnaire: Questionnaire): string[] {
+  if (key === "activity") return activityActions(questionnaire);
+  if (key === "nutrition") return nutritionActions(questionnaire);
+  if (key === "sedentary") {
+    const sitting = questionnaire.sittingHours || 0;
+    return [
+      sitting > 0 ? `Réduisez progressivement votre temps assis de ${sitting} à moins de 7 à 8 heures par jour.` : "Mesurez d’abord votre temps assis moyen sur une semaine.",
+      "Levez-vous ou marchez 2 à 5 minutes toutes les 30 à 60 minutes.",
+      "Ajoutez une marche de 10 minutes après un ou deux repas chaque jour."
+    ];
+  }
+  if (key === "sleep") {
+    const sleep = questionnaire.sleepHours || 0;
+    return [
+      sleep > 0 ? `Allongez progressivement votre sommeil de ${sleep} h vers une plage de 7 à 9 h, par pas de 15 minutes.` : "Stabilisez d’abord une heure de coucher et de lever régulière.",
+      "Exposez-vous à la lumière naturelle le matin et réduisez les écrans durant la dernière heure avant le coucher.",
+      "Consultez en cas de ronflements importants, pauses respiratoires ou insomnie persistante."
+    ];
+  }
+  if (key === "tobacco") return ["Fixez une date d’arrêt réaliste.", "Demandez un accompagnement médical ou pharmaceutique et discutez des substituts nicotiniques.", "Identifiez les trois situations qui déclenchent le plus souvent la consommation et préparez une alternative pour chacune."];
+  if (key === "alcohol") return ["Réduisez progressivement le nombre de verres hebdomadaires.", "Prévoyez plusieurs jours sans alcool chaque semaine.", "Évitez de regrouper les consommations sur une seule soirée."];
+  if (key === "stressRecovery") return ["Planifiez chaque jour 10 à 20 minutes de récupération sans écran.", "Protégez un horaire de sommeil régulier.", "Consultez si l’épuisement, l’anxiété ou la fatigue persistent."];
+  if (key === "morphology") return ["Visez une évolution progressive plutôt qu’un objectif de poids rapide.", "Associez renforcement musculaire, activité d’endurance et alimentation riche en fibres.", profile.waistCm ? "Suivez le tour de taille une fois par mois, dans les mêmes conditions." : "Ajoutez un suivi mensuel du tour de taille."];
+  return [];
+}
+
 export function calculateLongevityPriorities(
   profile: Profile,
   questionnaire: Questionnaire,
@@ -90,7 +160,7 @@ export function calculateLongevityPriorities(
     .map(({ key, deficit, urgency = 0 }) => {
       const severity = Math.round(Math.min(1, deficit * weights[key] + urgency) * 100);
       const [estimateMinMonths, estimateMaxMonths] = estimateRange(key, severity, profile.age, questionnaire);
-      return { key, severity, estimateMinMonths, estimateMaxMonths, ...metadata[key] };
+      return { key, severity, estimateMinMonths, estimateMaxMonths, personalizedActions: personalizedActions(key, profile, questionnaire), ...metadata[key] };
     })
     .filter((item) => item.severity >= 12)
     .sort((a, b) => b.severity - a.severity)
